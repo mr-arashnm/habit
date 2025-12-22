@@ -34,6 +34,43 @@ def create_promise(promise: schemas.PromiseCreate, current_user: models.User = D
     return new_promise
 
 
+from sqlalchemy import func
+
+# app/routers/promises.py
+from sqlalchemy import func
+
+
+@router.get("/trending", response_model=List[schemas.TrendingPromiseResponse])
+def get_trending_promises(limit: int = 10, db: Session = Depends(get_db)):
+    # ۱. شمارش فرزندان برای هر پدر
+    subquery = db.query(
+        models.Promise.parent_id,
+        func.count(models.Promise.id).label("count")
+    ).filter(models.Promise.parent_id != None) \
+        .group_by(models.Promise.parent_id).subquery()
+
+    # ۲. گرفتن قول‌های اصلی (آن‌هایی که خودشان کپی نیستند) و اتصال به شمارشگر
+    query = db.query(
+        models.Promise,
+        func.coalesce(subquery.c.count, 0).label("adoptions_count")
+    ).outerjoin(
+        subquery, models.Promise.id == subquery.c.parent_id
+    ).filter(models.Promise.parent_id == None) \
+        .order_by(func.coalesce(subquery.c.count, 0).desc()) \
+        .limit(limit)
+
+    results = query.all()
+
+    # ۳. آماده‌سازی خروجی
+    output = []
+    for promise, count in results:
+        # اضافه کردن فیلد adoptions_count به شیء promise قبل از بازگشت
+        promise.adoptions_count = count
+        output.append(promise)
+
+    return output
+
+
 @router.get("/{promise_id}", response_model=schemas.PromiseDetailResponse)
 def get_promise_detail(promise_id: int, db: Session = Depends(get_db)):
     # ۱. جستجوی قول
@@ -64,7 +101,7 @@ def update_promise(
         raise HTTPException(status_code=403, detail="شما اجازه ویرایش این قول را ندارید")
 
     # قانون بیزینسی: اگر قول منقضی شده یا باخته شده، نباید ویرایش شود
-    if promise.target_date < datetime.utcnow():
+    if promise.deadline < datetime.utcnow():
         raise HTTPException(status_code=400, detail="زمان این قول به پایان رسیده و قابل ویرایش نیست")
 
     # اعمال تغییرات
@@ -100,7 +137,7 @@ def delete_promise(
 @router.post("/{promise_id}/complete")
 def complete_promise(
         promise_id: int,
-        report: str,
+        report: str = "finish",
         current_user: models.User = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
@@ -205,30 +242,3 @@ def adopt_promise(
     db.commit()
 
     return {"message": "چالش با موفقیت برای شما فعال شد!"}
-
-
-from sqlalchemy import func
-
-
-@router.get("/trending", response_model=List[schemas.TrendingPromiseResponse])
-def get_trending_promises(limit: int = 10, db: Session = Depends(get_db)):
-    # ۱. کوئری برای پیدا کردن قول‌هایی که بیشترین زیرمجموعه (Adopt شده) را دارند
-    # ما قول‌هایی را پیدا می‌کنیم که parent_id نیستند (خودشان مرجع هستند)
-    # و تعداد دفعاتی که به عنوان parent_id استفاده شده‌اند را می‌شماریم
-
-    trending = db.query(
-        models.Promise,
-        func.count(models.Promise.id).label("total_adoptions")
-    ).join(
-        models.Promise, models.Promise.id == models.Promise.parent_id, isouter=True
-    ).group_by(models.Promise.id) \
-        .order_by(func.count(models.Promise.id).desc()) \
-        .limit(limit).all()
-
-    # تبدیل خروجی به فرمتی که اسکیما بفهمد
-    results = []
-    for promise, count in trending:
-        promise.adoptions_count = count
-        results.append(promise)
-
-    return results

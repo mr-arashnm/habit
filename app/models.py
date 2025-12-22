@@ -34,7 +34,7 @@ class OTPCode(Base):
     code = Column(String)
     otp_type = Column(Enum(OTPType))
     last_request_at = Column(DateTime, default=datetime.datetime.utcnow)
-    expires_at = Column(DateTime, default=lambda: datetime.utcnow() + datetime.timedelta(minutes=2))
+    expires_at = Column(DateTime, default=lambda: datetime.datetime.utcnow() + datetime.timedelta(minutes=2))
 
 
 class User(Base):
@@ -63,6 +63,8 @@ class User(Base):
     reputation_multiplier = Column(Float, default=1.0)
     multiplier_expiry = Column(DateTime, nullable=True)
 
+    signup_at = Column(DateTime, autoincrement=True)
+
     # روابط: حذف کاربر باعث حذف قول‌ها و نوتیفیکیشن‌های او می‌شود
     promises = relationship("Promise", back_populates="owner", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
@@ -81,9 +83,16 @@ class Promise(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     user_id = Column(Integer, ForeignKey("users.id"))
     parent_id = Column(Integer, ForeignKey("promises.id"), nullable=True)
+    visibility = Column(String, default="private")
 
     owner = relationship("User", back_populates="promises")
     validations = relationship("Validation", back_populates="promise", cascade="all, delete-orphan")
+
+    # این خط را اضافه کن تا رابطه با کامنت‌ها برقرار شود
+    comments = relationship("Comment", back_populates="promise", cascade="all, delete-orphan")
+
+    # همچنین اگر رابطه با لایک‌ها (Vouches) را هم تعریف نکردی، اضافه کن:
+    vouches = relationship("Vouch", back_populates="promise", cascade="all, delete-orphan")
 
 
 class Validation(Base):
@@ -187,3 +196,12 @@ class Purchase(Base):
     item_id = Column(Integer, ForeignKey("store_items.id"))
     purchased_at = Column(DateTime, default=datetime.datetime.utcnow)
     revealed_code = Column(String, nullable=True)
+
+
+class Vouch(Base):
+    __tablename__ = "vouches"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    promise_id = Column(Integer, ForeignKey("promises.id"))
+
+    promise = relationship("Promise", back_populates="vouches")

@@ -1,7 +1,9 @@
+from enum import Enum
+
 from pydantic import BaseModel, Field, field_validator, EmailStr, constr
 from datetime import datetime
 from typing import Optional, List
-from .models import PromiseStatus  # وارد کردن Enum از مدل
+from .models import PromiseStatus, PromiseStatus  # وارد کردن Enum از مدل
 
 # --- User Schemas ---
 class UserBase(BaseModel):
@@ -63,17 +65,17 @@ class PromiseDetailResponse(BaseModel):
     id: int
     title: str
     description: str
-    target_date: datetime
-    is_completed: bool
+    deadline: datetime
+    status: PromiseStatus
     status: str  # active, failed, completed
     created_at: datetime
 
     # اطلاعات سازنده قول برای نمایش در پروفایل کوچک بالای صفحه
-    creator: UserMinimalResponse
+    #creator: UserMinimalResponse
 
     # آمار سریع
-    vouch_count: int
-    view_count: int = 0  # اگر خواستی سیستم بازدید اضافه کنی
+    vouch_count: int = 0
+    #view_count: int = 0  # اگر خواستی سیستم بازدید اضافه کنی
 
     class Config:
         from_attributes = True
@@ -207,7 +209,7 @@ class UserFullProfile(BaseModel):
     coins: int
     reputation: int
     is_onboarded: bool
-    created_at: datetime
+    signup_at: datetime
 
     class Config:
         from_attributes = True
@@ -235,8 +237,7 @@ class PurchaseResponse(BaseModel):
     revealed_code: Optional[str]
 
 class TrendingPromiseResponse(PromiseResponse):
-    adoptions_count: int # تعداد دفعاتی که این قول توسط دیگران Adopt شده
-    creator: UserMinimalResponse
+    adoptions_count: int # count
 
     class Config:
         from_attributes = True

@@ -6,6 +6,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "SUPER_SECRET_KEY"
     ALGORITHM: str = "HS256"
 
+    KAVENEGAR_API_KEY: str = "2132"
+    OTP_TEMPLATE_NAME: str = "verify_template_name"
+
     # تنظیمات بازی (Game Logic)
     VOUCH_THRESHOLD: int = 3  # مقدار پیش‌فرض
     REPUTATION_REWARD: int = 10

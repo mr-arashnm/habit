@@ -7,7 +7,7 @@ from ..dependencies import get_current_user
 from ..models import OTPCode, User, OTPType
 from ..services.notifier import Notifier
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter()
 
 
 @router.post("/check-user")
