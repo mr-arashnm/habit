@@ -136,16 +136,6 @@ class UserLeaderboard(BaseModel):
     class Config:
         from_attributes = True
 
-class StoreItemResponse(BaseModel):
-    id: int
-    name: str
-    description: str
-    price: int
-    effect_type: str
-
-    class Config:
-        from_attributes = True
-
 class ProfileComplete(BaseModel):
     username: str
     password: str
