@@ -71,10 +71,12 @@ class ValidationResponse(BaseModel):
 
 class NotificationResponse(BaseModel):
     id: int
+    type: str
+    title: str
     content: str
+    link_id: Optional[int]
     is_read: bool
     created_at: datetime
-    promise_id: Optional[int] = None
 
     class Config:
         from_attributes = True

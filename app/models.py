@@ -90,11 +90,26 @@ class Validation(Base):
     promise = relationship("Promise", back_populates="validations")
 
 
+class NotificationType(str, enum.Enum):
+    VOUCH_RECEIVED = "vouch_received"  # وقتی کسی قولت رو تایید می‌کنه
+    PROMISE_COMPLETED = "promise_completed"  # وقتی قول تایید نهایی می‌شه
+    PROMISE_FAILED = "promise_failed"  # وقتی زمان قول تموم می‌شه و شکست می‌خوری
+    SYSTEM_MESSAGE = "system_message"  # پیام‌های مدیر یا جوایز خاص
+    REMINDER = "reminder"  # یادآوری برای ارسال گزارش
+
+
 class Notification(Base):
     __tablename__ = "notifications"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    content = Column(String)
+
+    type = Column(Enum(NotificationType), default=NotificationType.SYSTEM_MESSAGE)
+    title = Column(String)  # عنوان کوتاه (مثلاً: تایید جدید!)
+    content = Column(String)  # متن کامل
+
+    # لینک دادن به یک آبجکت خاص (مثلاً آیدی قولی که براش نوتیف اومده)
+    link_id = Column(Integer, nullable=True)
+
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 

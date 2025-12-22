@@ -10,33 +10,23 @@ router = APIRouter()
 
 
 @router.get("/", response_model=List[schemas.NotificationResponse])
-def get_my_notifications(
-        current_user_id: int = Depends(get_current_user),
-        db: Session = Depends(get_db)
+def get_notifications(
+        current_user: models.User = Depends(get_current_user),
+        db: Session = Depends(get_db),
+        unread_only: bool = False
 ):
-    # توجه: اگر current_user_id در نسخه جدید مدل، کل آبجکت User را برمی‌گرداند،
-    # از user.id استفاده کن.
-    uid = current_user_id.id if hasattr(current_user_id, 'id') else current_user_id
+    query = db.query(models.Notification).filter(models.Notification.user_id == current_user.id)
+    if unread_only:
+        query = query.filter(models.Notification.is_read == False)
 
-    return db.query(models.Notification).filter(
-        models.Notification.user_id == uid
-    ).order_by(models.Notification.created_at.desc()).all()
+    return query.order_by(models.Notification.created_at.desc()).limit(50).all()
 
 
-@router.post("/{notif_id}/read")
-def mark_as_read(
-        notif_id: int,
-        current_user_id: int = Depends(get_current_user),
-        db: Session = Depends(get_db)
-):
-    uid = current_user_id.id if hasattr(current_user_id, 'id') else current_user_id
-
-    notif = db.query(models.Notification).filter(
-        models.Notification.id == notif_id,
-        models.Notification.user_id == uid
-    ).first()
-
-    if notif:
-        notif.is_read = True
-        db.commit()
-    return {"status": "success"}
+@router.post("/mark-all-read")
+def mark_all_as_read(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    db.query(models.Notification).filter(
+        models.Notification.user_id == current_user.id,
+        models.Notification.is_read == False
+    ).update({"is_read": True})
+    db.commit()
+    return {"message": "تمام اعلان‌ها خوانده شد"}
