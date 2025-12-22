@@ -18,7 +18,7 @@ def check_user(identifier: str, type: str, db: Session = Depends(get_db)):
     if type == "email":
         user = db.query(User).filter( (User.email == identifier) | (User.username == identifier)).first()
     elif type == "phone":
-        user = (User.phone_number == identifier).first()
+        user = User.phone_number == identifier
 
     # اگر کاربر وجود دارد و رمز عبور هم تعریف کرده است
     if user and user.hashed_password:

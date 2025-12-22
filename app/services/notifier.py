@@ -9,6 +9,7 @@ class Notifier:
 
     @staticmethod
     def send_sms(phone_number: str, code: str):
+        print(f"📧 [EMAIL] Sending code {code} to {phone_number}")
         try:
             api = KavenegarAPI(settings.KAVENEGAR_API_KEY)
             params = {'receptor': phone_number, 'template': settings.OTP_TEMPLATE, 'token': code}

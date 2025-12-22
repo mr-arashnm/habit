@@ -20,6 +20,7 @@ origins = [
     "http://localhost",
     "http://localhost:3000", # اگر فرانت روی این پورت بود
     "http://127.0.0.1:5500", # برای Live Server در VS Code
+    "http://localhost:5173"
 ]
 
 app.add_middleware(
