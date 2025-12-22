@@ -93,3 +93,20 @@ class StoreItemResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ProfileComplete(BaseModel):
+    username: str
+    password: str
+
+    @field_validator('username')
+    @classmethod
+    def validate_username(cls, v):
+        if len(v) < 3:
+            raise ValueError('نام کاربری باید حداقل ۳ کاراکتر باشد')
+        return v
+
+class OnboardingData(BaseModel):
+    username: str
+    display_name: str
+    password: str # ست کردن رمز عبور برای اولین بار
+    bio: Optional[str] = None

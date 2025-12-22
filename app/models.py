@@ -1,6 +1,4 @@
-import enum
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Enum, Text
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Enum, func, Text
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 import enum
@@ -15,7 +13,6 @@ class VisibilityEnum(enum.Enum):
     FRIENDS_ONLY = "friends_only"
 
 
-
 class PromiseStatus(str, enum.Enum):
     PENDING = "pending"
     PENDING_APPROVAL = "pending_approval"
@@ -23,11 +20,39 @@ class PromiseStatus(str, enum.Enum):
     FAILED = "failed"
 
 
+class OTPType(str, enum.Enum):
+    PHONE = "phone"
+    EMAIL = "email"
+
+
+class OTPCode(Base):
+    __tablename__ = "otp_codes"
+    id = Column(Integer, primary_key=True, index=True)
+    identifier = Column(String, index=True) # می‌تواند ایمیل یا شماره موبایل باشد
+    code = Column(String)
+    otp_type = Column(Enum(OTPType))
+    last_request_at = Column(DateTime, default=datetime.datetime.utcnow)
+    expires_at = Column(DateTime, default=lambda: datetime.utcnow() + datetime.timedelta(minutes=2))
+
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
+
+    phone_number = Column(String, unique=True, index=True, nullable=True)
+    is_phone_verified = Column(Boolean, default=False)  # تایید اختصاصی موبایل
+
+    email = Column(String, unique=True, index=True, nullable=True)
+    is_email_verified = Column(Boolean, default=False)  # تایید اختصاصی ایمیل
+
     hashed_password = Column(String)
+    is_active = Column(Boolean, default=False)
+
+    display_name = Column(String, nullable=True)  # نام نمایشی (مثلاً: آرش ناصری)
+    bio = Column(String, nullable=True)
+    is_onboarded = Column(Boolean, default=False)  # آیا مراحل اولیه را تکمیل کرده؟
+
     reputation = Column(Integer, default=10)
     coins = Column(Integer, default=100)
     total_completed = Column(Integer, default=0)
