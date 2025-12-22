@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum, Text
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum, Text, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 import enum
@@ -60,6 +60,9 @@ class User(Base):
     total_completed = Column(Integer, default=0)
     total_failed = Column(Integer, default=0)
 
+    reputation_multiplier = Column(Float, default=1.0)
+    multiplier_expiry = Column(DateTime, nullable=True)
+
     # روابط: حذف کاربر باعث حذف قول‌ها و نوتیفیکیشن‌های او می‌شود
     promises = relationship("Promise", back_populates="owner", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
@@ -77,6 +80,7 @@ class Promise(Base):
     evidence_text = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     user_id = Column(Integer, ForeignKey("users.id"))
+    parent_id = Column(Integer, ForeignKey("promises.id"), nullable=True)
 
     owner = relationship("User", back_populates="promises")
     validations = relationship("Validation", back_populates="promise", cascade="all, delete-orphan")
@@ -168,10 +172,18 @@ class DirectMessage(Base):
 class StoreItem(Base):
     __tablename__ = "store_items"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)           # مثلا: کد تخفیف ۵۰ تومانی اسنپ‌فود
+    name = Column(String, index=True)
     description = Column(String)
-    price = Column(Integer)         # قیمت به سکه
-    category = Column(String)       # discount_code, power_up, avatar
-    stock = Column(Integer, default=100) # موجودی
-    discount_code = Column(String, nullable=True) # کدی که بعد از خرید فاش می‌شود
-    image_url = Optional[str]       # عکس محصول یا لوگوی برند
+    price = Column(Integer)
+    category = Column(String, index=True) # avatar, powerup, discount
+    stock = Column(Integer, default=0)
+    discount_code = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)
+
+class Purchase(Base):
+    __tablename__ = "purchases"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    item_id = Column(Integer, ForeignKey("store_items.id"))
+    purchased_at = Column(DateTime, default=datetime.datetime.utcnow)
+    revealed_code = Column(String, nullable=True)

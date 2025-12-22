@@ -170,3 +170,65 @@ def vouch_promise(
 
     db.commit()
     return {"message": "رای تایید شما ثبت شد", "current_vouches": total_vouches}
+
+
+@router.post("/{promise_id}/adopt")
+def adopt_promise(
+        promise_id: int,
+        adoption_data: schemas.PromiseCreate,  # شامل ددلاین، پاداش و تنبیه جدید
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user)
+):
+    # ۱. پیدا کردن قول مرجع
+    original_promise = db.query(models.Promise).filter(models.Promise.id == promise_id).first()
+    if not original_promise:
+        raise HTTPException(status_code=404, detail="قول اصلی پیدا نشد")
+
+    # ۲. بررسی اینکه کاربر سکه کافی برای تنبیه (Stake) انتخابی دارد یا نه
+    # فرض می‌کنیم تنبیه را در قالب سکه (coin_stake) در مدل داریم
+    if current_user.coins < adoption_data.coin_stake:
+        raise HTTPException(status_code=400, detail="سکه کافی برای تعیین این تنبیه ندارید")
+
+    # ۳. ساخت قول جدید (کلون شده)
+    new_promise = models.Promise(
+        user_id=current_user.id,
+        parent_id=original_promise.id,  # ارجاع به قول اصلی
+        title=original_promise.title,
+        description=original_promise.description,
+        target_date=adoption_data.target_date,  # ددلاین جدید
+        reward_description=adoption_data.reward_description,  # پاداش جدید
+        coin_stake=adoption_data.coin_stake,  # تنبیه مالی جدید
+        status="active"
+    )
+
+    db.add(new_promise)
+    db.commit()
+
+    return {"message": "چالش با موفقیت برای شما فعال شد!"}
+
+
+from sqlalchemy import func
+
+
+@router.get("/trending", response_model=List[schemas.TrendingPromiseResponse])
+def get_trending_promises(limit: int = 10, db: Session = Depends(get_db)):
+    # ۱. کوئری برای پیدا کردن قول‌هایی که بیشترین زیرمجموعه (Adopt شده) را دارند
+    # ما قول‌هایی را پیدا می‌کنیم که parent_id نیستند (خودشان مرجع هستند)
+    # و تعداد دفعاتی که به عنوان parent_id استفاده شده‌اند را می‌شماریم
+
+    trending = db.query(
+        models.Promise,
+        func.count(models.Promise.id).label("total_adoptions")
+    ).join(
+        models.Promise, models.Promise.id == models.Promise.parent_id, isouter=True
+    ).group_by(models.Promise.id) \
+        .order_by(func.count(models.Promise.id).desc()) \
+        .limit(limit).all()
+
+    # تبدیل خروجی به فرمتی که اسکیما بفهمد
+    results = []
+    for promise, count in trending:
+        promise.adoptions_count = count
+        results.append(promise)
+
+    return results

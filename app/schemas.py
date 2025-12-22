@@ -240,3 +240,10 @@ class PurchaseResponse(BaseModel):
     item_name: str
     purchased_at: datetime
     revealed_code: Optional[str]
+
+class TrendingPromiseResponse(PromiseResponse):
+    adoptions_count: int # تعداد دفعاتی که این قول توسط دیگران Adopt شده
+    creator: UserMinimalResponse
+
+    class Config:
+        from_attributes = True

@@ -9,13 +9,13 @@ router = APIRouter()
 
 
 # --- ۱. دریافت اطلاعات پروفایل من ---
-@router.get("/me/full", response_model=schemas.UserFullProfile)
+@router.get("/me", response_model=schemas.UserFullProfile)
 def get_my_full_profile(current_user: models.User = Depends(get_current_user)):
     """مشاهده پروفایل کامل توسط خود کاربر (شامل اطلاعات حساس)"""
     return current_user
 
 
-@router.patch("/me/update")
+@router.patch("/me")
 def update_my_profile(
         obj_in: schemas.UserUpdate,
         db: Session = Depends(get_db),
