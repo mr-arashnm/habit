@@ -1,40 +1,44 @@
-from pydantic import BaseModel, field_validator # در نسخه‌های جدید Pydantic از field_validator استفاده می‌شود
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from typing import Optional, List
+from .models import PromiseStatus  # وارد کردن Enum از مدل
 
+# --- User Schemas ---
+class UserBase(BaseModel):
+    username: str
+
+class UserCreate(UserBase):
+    password: str
+
+class UserResponse(UserBase):
+    id: int
+    reputation: int
+    coins: int
+    total_completed: int
+    total_failed: int
+
+    class Config:
+        from_attributes = True
+
+# --- Token Schemas ---
 class Token(BaseModel):
     access_token: str
-    refresh_token: str # اضافه شد
+    refresh_token: str
     token_type: str = "bearer"
 
 class TokenData(BaseModel):
     user_id: Optional[str] = None
 
-# --- اسکیمای کاربر ---
-class UserCreate(BaseModel):
-    username: str
-    password: str
-
-class UserResponse(BaseModel):
-    id: int
-    username: str
-    reputation: int
-    coins: int  # اضافه شد برای نمایش در پروفایل
-    total_completed: int # اضافه شد برای آمار داشبورد
-    total_failed: int    # اضافه شد برای آمار داشبورد
-
-    class Config:
-        from_attributes = True
-
-# --- اسکیمای قول (Promise) ---
+# --- Promise Schemas ---
 class PromiseBase(BaseModel):
     title: str
+    description: Optional[str] = None
     reward: Optional[str] = None
     penalty: Optional[str] = None
     deadline: datetime
     visibility: str = "PUBLIC"
 
-    @field_validator("visibility") # جایگزین validator قدیمی
+    @field_validator("visibility")
     @classmethod
     def uppercase_visibility(cls, v: str) -> str:
         return v.upper()
@@ -45,35 +49,20 @@ class PromiseCreate(PromiseBase):
 class PromiseResponse(PromiseBase):
     id: int
     user_id: int
-    status: str
+    status: PromiseStatus # استفاده از Enum واقعی
+    evidence_text: Optional[str] = None
     created_at: datetime
     vouch_count: int = 0
 
     class Config:
         from_attributes = True
 
-# --- اسکیمای احراز هویت (Token) ---
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-class TokenData(BaseModel):
-    user_id: Optional[str] = None
-
-# --- بقیه اسکیماها (بدون تغییر) ---
-class UserLeaderboard(BaseModel):
+# --- Validation & Notification ---
+class ValidationResponse(BaseModel):
     id: int
-    username: str
-    reputation: int
-    class Config:
-        from_attributes = True
+    validator_id: int
+    weight: int
 
-class StoreItemResponse(BaseModel):
-    id: int
-    name: str
-    description: str
-    price: int
-    effect_type: str
     class Config:
         from_attributes = True
 
@@ -83,6 +72,24 @@ class NotificationResponse(BaseModel):
     is_read: bool
     created_at: datetime
     promise_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+# --- Leaderboard & Store ---
+class UserLeaderboard(BaseModel):
+    username: str
+    reputation: int
+
+    class Config:
+        from_attributes = True
+
+class StoreItemResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    price: int
+    effect_type: str
 
     class Config:
         from_attributes = True
