@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, EmailStr, constr
 from datetime import datetime
 from typing import Optional, List
 from .models import PromiseStatus  # وارد کردن Enum از مدل
@@ -7,7 +7,10 @@ from .models import PromiseStatus  # وارد کردن Enum از مدل
 class UserBase(BaseModel):
     username: str
 
-class UserCreate(UserBase):
+class UserCreate(BaseModel):
+    username: str
+    email: EmailStr
+    phone_number: str  # مطمئن شو این خط وجود دارد
     password: str
 
 class UserResponse(BaseModel):
@@ -234,6 +237,14 @@ class PurchaseResponse(BaseModel):
 class TrendingPromiseResponse(PromiseResponse):
     adoptions_count: int # تعداد دفعاتی که این قول توسط دیگران Adopt شده
     creator: UserMinimalResponse
+
+    class Config:
+        from_attributes = True
+
+class UserOnboarding(BaseModel):
+    full_name: str
+    username: constr(min_length=3, max_length=20, pattern="^[a-zA-Z0-9_]+$") # محدودیت برای یوزرنیم
+    password: str # یا هر فیلد دیگری که در این مرحله نیاز دارید مثل bio
 
     class Config:
         from_attributes = True

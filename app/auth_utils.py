@@ -11,6 +11,14 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # کوتاه مدت برای امنیت
 REFRESH_TOKEN_EXPIRE_DAYS = 7     # بلند مدت برای راحتی کاربر
 
+def verify_password(plain_password, hashed_password):
+    """بررسی تطابق پسورد وارد شده با هش ذخیره شده"""
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    """تبدیل پسورد خام به هش برای ذخیره در دیتابیس"""
+    return pwd_context.hash(password)
+
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
