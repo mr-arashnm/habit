@@ -34,6 +34,68 @@ def create_promise(promise: schemas.PromiseCreate, current_user: models.User = D
     return new_promise
 
 
+@router.get("/{promise_id}", response_model=schemas.PromiseDetailResponse)
+def get_promise_detail(promise_id: int, db: Session = Depends(get_db)):
+    # ۱. جستجوی قول
+    promise = db.query(models.Promise).filter(models.Promise.id == promise_id).first()
+
+    if not promise:
+        raise HTTPException(status_code=404, detail="این قول پیدا نشد یا حذف شده است")
+
+    return promise
+
+
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, status
+
+
+# ... سایر ایمپورت‌ها
+
+@router.patch("/{promise_id}")
+def update_promise(
+        promise_id: int,
+        obj_in: schemas.PromiseUpdate,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user)
+):
+    promise = db.query(models.Promise).filter(models.Promise.id == promise_id).first()
+
+    if not promise or promise.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="شما اجازه ویرایش این قول را ندارید")
+
+    # قانون بیزینسی: اگر قول منقضی شده یا باخته شده، نباید ویرایش شود
+    if promise.target_date < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="زمان این قول به پایان رسیده و قابل ویرایش نیست")
+
+    # اعمال تغییرات
+    for field, value in obj_in.dict(exclude_unset=True).items():
+        setattr(promise, field, value)
+
+    db.commit()
+    return {"message": "قول شما با موفقیت به‌روزرسانی شد"}
+
+
+@router.delete("/{promise_id}")
+def delete_promise(
+        promise_id: int,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user)
+):
+    promise = db.query(models.Promise).filter(models.Promise.id == promise_id).first()
+
+    if not promise or promise.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="شما اجازه حذف این قول را ندارید")
+
+    # قانون بیزینسی: اگر کسی برای این قول Vouch (تایید) گذاشته، دیگر نباید حذف شود (برای حفظ اعتبار شبکه)
+    vouch_exists = db.query(models.Vouch).filter(models.Vouch.promise_id == promise_id).first()
+    if vouch_exists:
+        raise HTTPException(status_code=400, detail="به دلیل وجود تاییدیه (Vouch) از سمت دیگران، این قول قابل حذف نیست")
+
+    db.delete(promise)
+    db.commit()
+    return {"message": "قول با موفقیت حذف شد"}
+
+
 # ۳. ارسال گزارش انجام قول (Text Evidence)
 @router.post("/{promise_id}/complete")
 def complete_promise(

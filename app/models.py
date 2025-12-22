@@ -1,3 +1,5 @@
+from typing import Optional
+
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -131,17 +133,45 @@ class Comment(Base):
     author = relationship("User")
 
 
-class StoreItem(Base):
-    __tablename__ = "store_items"
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    description = Column(String)
-    price = Column(Integer)
-    effect_type = Column(String) # مثلا "reputation_boost" یا "remove_failure"
-
-
 class TokenBlacklist(Base):
     __tablename__ = "token_blacklist"
     id = Column(Integer, primary_key=True, index=True)
     token = Column(String, unique=True, index=True)
     blacklisted_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+    id = Column(Integer, primary_key=True, index=True)
+    user1_id = Column(Integer, ForeignKey("users.id"))
+    user2_id = Column(Integer, ForeignKey("users.id"))
+    last_message = Column(String)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow) # برای مرتب‌سازی لیست چت‌ها
+
+
+class DirectMessage(Base):
+    __tablename__ = "direct_messages"
+    id = Column(Integer, primary_key=True, index=True)
+    conversation_id = Column(Integer, ForeignKey("conversations.id"))
+    sender_id = Column(Integer, ForeignKey("users.id"))
+    content = Column(String)
+    is_read = Column(Boolean, default=False)
+
+    # فیلدهای جدید برای حرفه‌ای شدن
+    is_edited = Column(Boolean, default=False)
+    is_deleted = Column(Boolean, default=False)  # حذف منطقی (Soft Delete)
+
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, onupdate=datetime.datetime.utcnow)
+
+
+class StoreItem(Base):
+    __tablename__ = "store_items"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)           # مثلا: کد تخفیف ۵۰ تومانی اسنپ‌فود
+    description = Column(String)
+    price = Column(Integer)         # قیمت به سکه
+    category = Column(String)       # discount_code, power_up, avatar
+    stock = Column(Integer, default=100) # موجودی
+    discount_code = Column(String, nullable=True) # کدی که بعد از خرید فاش می‌شود
+    image_url = Optional[str]       # عکس محصول یا لوگوی برند

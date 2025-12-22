@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .database import engine
 from . import models
-from .routers import auth, promises, users, notifications, websocket
+from .routers import auth, promises, users, notifications, websocket, messages, store
 
 # ۱. ایجاد جداول دیتابیس (اگر از Alembic استفاده نمی‌کنی)
 models.Base.metadata.create_all(bind=engine)
@@ -37,6 +37,9 @@ app.include_router(promises.router, prefix="/promises", tags=["Promises"])
 app.include_router(users.router, prefix="/users", tags=["Users/Leaderboard"])
 app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
 app.include_router(websocket.router, prefix="/ws", tags=["WebSockets"])
+app.include_router(messages.router, prefix="/messages", tags=["Direct Messages"])
+app.include_router(store.router, prefix="/store", tags=["Store"])
+
 
 # ۴. روت اصلی (Health Check)
 @app.get("/", tags=["Root"])
