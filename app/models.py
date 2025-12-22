@@ -123,3 +123,10 @@ class StoreItem(Base):
     description = Column(String)
     price = Column(Integer)
     effect_type = Column(String) # مثلا "reputation_boost" یا "remove_failure"
+
+
+class TokenBlacklist(Base):
+    __tablename__ = "token_blacklist"
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String, unique=True, index=True)
+    blacklisted_at = Column(DateTime, default=datetime.datetime.utcnow)

@@ -10,12 +10,15 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     id: int
+    username: Optional[str]
+    phone_number: Optional[str]
+    email: Optional[str]
+    display_name: Optional[str]
     reputation: int
     coins: int
-    total_completed: int
-    total_failed: int
+    is_onboarded: bool
 
     class Config:
         from_attributes = True

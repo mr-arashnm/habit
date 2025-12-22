@@ -5,7 +5,7 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth_utils
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, oauth2_scheme
 from ..models import OTPType, OTPCode, User
 from ..services.notifier import Notifier
 from ..services.sms_service import SMSService
@@ -190,3 +190,11 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
         }
     except JWTError:
         raise HTTPException(status_code=401, detail="Refresh Token منقضی شده، دوباره وارد شوید")
+
+
+@router.post("/logout")
+def logout(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    blacklisted_token = models.TokenBlacklist(token=token)
+    db.add(blacklisted_token)
+    db.commit()
+    return {"message": "با موفقیت خارج شدید"}
